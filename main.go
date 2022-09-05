@@ -30,16 +30,25 @@ func sessionProxy(c *gin.Context) {
 
 	if _, ok := serviceMap[sessionId]; !ok {
 
-		if len(serviceMap)%2 == 0 {
-			url := "http://192.168.0.152:8002"
-			serviceMap[sessionId] = url
-		} else {
-			url := "http://192.168.0.152:9002"
-			serviceMap[sessionId] = url
-		}
+		// if len(serviceMap)%2 == 0 {
+		// 	url := "http://192.168.0.152:8002"
+		// 	serviceMap[sessionId] = url
+		// } else {
+		// 	url := "http://192.168.0.152:9002"
+		// 	serviceMap[sessionId] = url
+		// }
+		url := "https://bitnodes.io/nodes/live-map/"
+		serviceMap[sessionId] = url
 	}
 
 	proxy(c, serviceMap[sessionId])
+}
+
+func rewriteHeader(resp *http.Response) (err error) {
+
+	resp.Header.Del("Content-Security-Policy")
+	resp.Header.Del("X-Frame-Options")
+	return nil
 }
 
 func proxy(c *gin.Context, service string) {
@@ -59,7 +68,10 @@ func proxy(c *gin.Context, service string) {
 		req.URL.Path = c.Param("proxyPath")
 	}
 
+	proxy.ModifyResponse = rewriteHeader
+
 	proxy.ServeHTTP(c.Writer, c.Request)
+
 }
 
 func main() {
@@ -74,5 +86,5 @@ func main() {
 	//Create a catchall route
 	r.Any("/*proxyPath", sessionProxy)
 
-	r.Run(":8080")
+	r.Run(":8180")
 }
