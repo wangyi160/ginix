@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -43,6 +44,27 @@ func sessionProxy(c *gin.Context) {
 
 	proxy(c, serviceMap[sessionId])
 }
+
+// func rewriteBody(resp *http.Response) (err error) {
+// 	b, err := ioutil.ReadAll(resp.Body) //Read html
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = resp.Body.Close()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	b = bytes.Replace(b, []byte("Top user agents"), []byte("客户端排行"), -1) // replace html
+// 	body := ioutil.NopCloser(bytes.NewReader(b))
+// 	resp.Body = body
+// 	resp.ContentLength = int64(len(b))
+// 	resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+
+// 	// 去掉无用的header
+// 	resp.Header.Del("Content-Security-Policy")
+// 	resp.Header.Del("X-Frame-Options")
+// 	return nil
+// }
 
 func rewriteHeader(resp *http.Response) (err error) {
 
@@ -82,6 +104,15 @@ func main() {
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
+
+	// // 加入html静态页面
+	r.Use(static.Serve("/static", static.LocalFile("static", false)))
+
+	// 404 处理
+	r.NoRoute(func(c *gin.Context) {
+		c.File("static/index.html")
+	})
+	//r.GET("/nodes/live-map", )
 
 	//Create a catchall route
 	r.Any("/*proxyPath", sessionProxy)
